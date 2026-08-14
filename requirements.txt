@@ -1,0 +1,26 @@
+# CDFS-D2AFC
+# Python >= 3.8 (recommended: 3.9–3.11 with CUDA)
+
+# ---- PyTorch ----
+# Please install torch / torchvision that matches your CUDA from:
+# https://pytorch.org/get-started/locally/
+# Example (CUDA 11.8):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+torchvision>=0.15.0
+
+# ---- Core ----
+numpy>=1.23.0
+scipy>=1.9.0
+scikit-learn>=1.2.0
+matplotlib>=3.7.0
+einops>=0.6.0
+timm>=0.9.0
+tensorboardX>=2.6
+tensorboard>=2.14.0
+
+# ---- Data I/O (source pickle / .mat / optional HDF5 preprocessing) ----
+h5py>=3.8.0
+
+# ---- Optional: Bayesian hyperparameter search ----
+optuna>=3.4.0
