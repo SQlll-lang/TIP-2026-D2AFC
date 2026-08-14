@@ -2,72 +2,72 @@
 
 Official PyTorch implementation of **CDFS-D²AFC**: Dual-Level Domain Alignment with Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification.
 
-跨场景高光谱少样本分类代码。本仓库实现论文方法：波段映射 + **GLAI-Former** 特征提取、源/目标域原型少样本分类、双层域对齐（D²A）以及掩码细粒度对比学习（Masked FSCL）。
+This repository provides the code for cross-scene few-shot hyperspectral image classification, including band mapping, **GLAI-Former** feature extraction, source/target prototype-based few-shot classification, dual-level domain alignment (D²A), and masked fine-grained contrastive learning (Masked FSCL).
 
 ---
 
 ## Method Overview
 
-给定源域（类别丰富、有标签）和目标域（每类仅少量标注），模型将不同传感器的光谱维映射到公共空间，再用 GLAI-Former 提取空–谱特征，并通过下列损失联合训练：
+Given a labeled source domain (rich categories) and a target domain with only a few labeled samples per class, the model maps spectra from different sensors into a shared space, extracts spatial–spectral features with GLAI-Former, and is trained with the following joint loss:
 
 ```
 L = L_fsl + λ_ctx · L_fscl + λ_wd · L_WD + λ_disc · L_disc
 ```
 
-Indian Pines 实验默认权重与论文一致：`λ_ctx = 2.0`，`λ_wd = 0.001`，`λ_disc = 1.0`。
+Default loss weights for the Indian Pines experiments match the paper: `λ_ctx = 2.0`, `λ_wd = 0.001`, `λ_disc = 1.0`.
 
-| 模块 | 作用 | 主要代码 |
-|------|------|----------|
-| Mapping | 1×1 卷积将源/目标波段映到公共维 `d_map=100` | `model/mapping.py` |
-| GLAI-Former | 空–谱全局/局部注意力特征提取 | `model/GLAI_Former.py` |
-| FSL | 原型网络 + 欧氏距离交叉熵 | `train-IP.py`, `utils/` |
-| D²A | Sinkhorn Wasserstein 距离 + Cross-Transformer 对抗对齐 | `model/loss.py`, `GLAI_Former.py` |
-| Masked FSCL | 空间随机掩码 (`σ=0.8`) + ConTeXLoss (`τ=0.1`, `γ=0.7`) | `utils/data_augment.py`, `model/loss.py` |
+| Module | Role | Main code |
+|--------|------|-----------|
+| Mapping | 1×1 convolution mapping source/target bands to a shared dim `d_map=100` | `model/mapping.py` |
+| GLAI-Former | Spatial–spectral global/local attention feature extraction | `model/GLAI_Former.py` |
+| FSL | Prototypical network + Euclidean-distance cross-entropy | `train-IP.py`, `utils/` |
+| D²A | Sinkhorn Wasserstein distance + Cross-Transformer adversarial alignment | `model/loss.py`, `GLAI_Former.py` |
+| Masked FSCL | Spatial random masking (`σ=0.8`) + ConTeXLoss (`τ=0.1`, `γ=0.7`) | `utils/data_augment.py`, `model/loss.py` |
 
-测试阶段对特征做 min-max 归一化后使用 **1-NN** 分类。
+At test time, features are min–max normalized and classified with **1-NN**.
 
 ---
 
 ## Requirements
 
-- Python ≥ 3.8（建议 3.9–3.11）
-- CUDA GPU（训练默认 `config['gpu'] = 0`）
-- 依赖见 [`requirements.txt`](requirements.txt)
+- Python ≥ 3.8 (recommended: 3.9–3.11)
+- CUDA GPU (training defaults to `config['gpu'] = 0`)
+- Dependencies listed in [`requirements.txt`](requirements.txt)
 
 ```bash
-# 1) 按本机 CUDA 版本安装 PyTorch：https://pytorch.org/get-started/locally/
+# 1) Install PyTorch for your CUDA version: https://pytorch.org/get-started/locally/
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
-# 2) 其余依赖
+# 2) Install remaining dependencies
 pip install -r requirements.txt
 ```
 
-`optuna` 仅在贝叶斯调参脚本中需要；只复现主实验可不安装。
+`optuna` is required only by the Bayesian tuning scripts; it is optional for reproducing the main experiments.
 
 ---
 
 ## Dataset
 
-本仓库**不包含**原始数据。请自行下载并按下面结构放置（路径可在 `config/IP.py` 中修改）。
+This repository does **not** ship the raw data. Please download the datasets and place them as follows (paths can be changed in `config/IP.py`).
 
-当前提供的配置对应：**ZY1-04-24 → Indian Pines**（5-shot）。
+The provided configuration corresponds to **ZY1-04-24 → Indian Pines** (5-shot).
 
 ```
 datasets/
-├── ZY10424_imdb_76_7_7.pickle          # 源域：已切好的 7×7 patch，76 波段，19 类
+├── ZY10424_imdb_76_7_7.pickle          # Source: pre-extracted 7×7 patches, 76 bands, 19 classes
 └── IP/
-    ├── indian_pines_corrected.mat      # 目标域影像
-    └── indian_pines_gt.mat             # 目标域标签
+    ├── indian_pines_corrected.mat      # Target imagery
+    └── indian_pines_gt.mat             # Target labels
 ```
 
-Indian Pines 可从 [Hyperspectral Remote Sensing Scenes](http://www.ehu.eus/ccwintco/index.php/Hyperspectral_Remote_Sensing_Scenes) 获取。源域 pickle 需按论文预处理（patch 大小 7×7）。`utils/chikusei_imdb_128.py` 给出了类似的源域 IMDB 构建参考。
+Indian Pines is available from [Hyperspectral Remote Sensing Scenes](http://www.ehu.eus/ccwintco/index.php/Hyperspectral_Remote_Sensing_Scenes). The source-domain pickle should follow the paper preprocessing (patch size 7×7). `utils/chikusei_imdb_128.py` provides a reference for building a similar source IMDB.
 
-在 `config/IP.py` 中把路径改成你的本地目录。`train-IP.py` 会用 `os.path.join(data_path, source_data)` 拼接路径，因此：
+Update the paths in `config/IP.py` to match your local layout. `train-IP.py` joins paths with `os.path.join(data_path, source_data)`, so:
 
-- `data_path`：数据集根目录
-- `source_data` / `target_data` / `target_data_gt`：相对 `data_path` 的文件名（不要再写成绝对路径）
+- `data_path`: dataset root directory
+- `source_data` / `target_data` / `target_data_gt`: filenames relative to `data_path` (do not use absolute paths here)
 
-示例：
+Example:
 
 ```python
 config['data_path'] = './datasets'
@@ -81,18 +81,18 @@ config['gpu'] = 0
 
 ## Usage
 
-在项目根目录运行：
+Run from the project root:
 
 ```bash
 python train-IP.py --config ./config/IP.py
 ```
 
-默认会按 10 组随机种子重复实验，并在 `./logs/` 下写入日志。TensorBoard 记录可通过 `tensorboard --logdir ./logs` 查看。
+By default, the experiment is repeated over 10 random seeds, and logs are written under `./logs/`. View TensorBoard with `tensorboard --logdir ./logs`.
 
-主要超参（Indian Pines，与论文一致）：
+Main hyperparameters (Indian Pines, consistent with the paper):
 
-| 项 | 值 |
-|----|----|
+| Item | Value |
+|------|-------|
 | patch size | 7 |
 | mapped dim / embedding | 100 / 128 |
 | episode | 5000 |
@@ -101,17 +101,17 @@ python train-IP.py --config ./config/IP.py
 | FSCL temperature / γ | 0.1 / 0.7 |
 | spatial mask ratio | 0.8 |
 
-训练结束后会报告 OA、AA、Kappa、F1（多次运行的均值与标准差）。最佳权重会保存在日志对应目录中，可用 `generate_tsne_from_model.py` 做特征可视化。
+After training, OA, AA, Kappa, and F1 are reported (mean ± std over runs). Best checkpoints are saved under the corresponding log directory and can be used for visualization with `generate_tsne_from_model.py`.
 
-### t-SNE（可选）
+### t-SNE (optional)
 
 ```bash
 python generate_tsne_from_model.py --model_path <path_to_ckpt.pth> --config ./config/IP.py
 ```
 
-### Bayesian tuning（可选）
+### Bayesian tuning (optional)
 
-超参搜索脚本在 `BO-based tuning tool/`，入口为 `bayesian_tuning_universal.py`。详细命令见该目录下的说明文档。
+Hyperparameter search scripts are under `BO-based tuning tool/`, with entry point `bayesian_tuning_universal.py`. See the docs in that folder for detailed commands.
 
 ---
 
@@ -119,41 +119,39 @@ python generate_tsne_from_model.py --model_path <path_to_ckpt.pth> --config ./co
 
 ```
 CDFS-D2AFC-main/
-├── train-IP.py                 # 主训练 / 测试入口（IP 实验）
-├── generate_tsne_from_model.py # 用已保存权重生成 t-SNE
+├── train-IP.py                 # Main train/test entry (IP experiments)
+├── generate_tsne_from_model.py # t-SNE from a saved checkpoint
 ├── config/
-│   └── IP.py                   # 数据路径与训练超参
+│   └── IP.py                   # Data paths and training hyperparameters
 ├── model/
-│   ├── mapping.py              # 光谱维映射
+│   ├── mapping.py              # Spectral-dimension mapping
 │   ├── GLAI_Former.py          # GLAI-Former / CrossTransformer / DomainDiscriminator
-│   └── loss.py                 # Sinkhorn WD、ConTeXLoss 等
+│   └── loss.py                 # Sinkhorn WD, ConTeXLoss, etc.
 ├── utils/
-│   ├── dataloader.py           # episode 任务与目标域加载
-│   ├── data_augment.py         # 空间随机掩码
-│   ├── utils.py                # 数据读取、度量、日志
-│   └── loss_function.py        # 额外损失（主实验未使用）
-└── BO-based tuning tool/       # Optuna 调参工具
+│   ├── dataloader.py           # Episode tasks and target-domain loading
+│   ├── data_augment.py         # Spatial random masking
+│   ├── utils.py                # Data I/O, metrics, logging
+│   └── loss_function.py        # Extra losses (not used in the main experiments)
+└── BO-based tuning tool/       # Optuna-based tuning utilities
 ```
 
 ---
 
 ## Citation
 
-如果本代码对你的研究有帮助，请引用我们的论文：
+If you find this code useful for your research, please cite our paper:
 
 ```bibtex
 @article{CDFS-D2AFC,
-  title   = {CDFS-D$^{2}$AFC: Dual-Level Domain Alignment with Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification},
+  title   = {Dual-Level Domain Alignment with Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification},
   author  = {},
   journal = {IEEE Transactions on Image Processing},
   year    = {2026}
 }
 ```
 
-论文正式发表后，请将上面的 `author`、卷期页码和 DOI 补全。
-
 ---
 
 ## Acknowledgement
 
-本实现面向跨场景高光谱少样本分类设定，源域与目标域来自不同传感器/场景。欢迎提 Issue 讨论数据预处理与复现细节。
+This implementation targets the cross-scene few-shot hyperspectral classification setting, where the source and target domains come from different sensors/scenes. Feel free to open an Issue for questions about data preprocessing and reproduction.
