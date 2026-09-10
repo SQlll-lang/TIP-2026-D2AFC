@@ -142,12 +142,16 @@ CDFS-D2AFC-main/
 If you find this code useful for your research, please cite our paper:
 
 ```bibtex
-@article{CDFS-D2AFC,
-  title   = {Dual-Level Domain Alignment with Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification},
-  author  = {},
-  journal = {IEEE Transactions on Image Processing},
-  year    = {2026}
-}
+@ARTICLE{11664290,
+  author={Sun, Qi and Wang, Wuli and Xin, Hongquan and Wang, Jianbu and Li, Wei and Ren, Guangbo and Fang, Leyuan},
+  journal={IEEE Transactions on Image Processing}, 
+  title={Dual-Level Domain Alignment Meets Fine-Grained Contrast: Advancing Cross-Scene Few-Shot Hyperspectral Image Classification}, 
+  year={2026},
+  volume={35},
+  number={},
+  pages={9256-9271},
+  keywords={Modeling;Labeling;Wetlands;Modules (abstract algebra);Contrastive learning;Hyperspectral imaging;Image classification;Transformers;IP networks;Learning (artificial intelligence);HSI classification;cross-domain few-shot;dual-level domain adaptation;supervised contrastive learning},
+  doi={10.1109/TIP.2026.3724715}}
 ```
 
 ---
