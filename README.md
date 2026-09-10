@@ -1,6 +1,6 @@
 # CDFS-D²AFC
 
-Official PyTorch implementation of **CDFS-D²AFC**: Dual-Level Domain Alignment with Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification.
+Official PyTorch implementation of **CDFS-D²AFC**: Dual-Level Domain Alignment meets Fine-Grained Contrastive Learning for Cross-Scene Few-Shot Hyperspectral Image Classification.
 
 This repository provides the code for cross-scene few-shot hyperspectral image classification, including band mapping, **GLAI-Former** feature extraction, source/target prototype-based few-shot classification, dual-level domain alignment (D²A), and masked fine-grained contrastive learning (Masked FSCL).
 
